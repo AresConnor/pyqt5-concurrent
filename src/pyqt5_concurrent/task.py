@@ -3,18 +3,18 @@ from typing import Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal, QRunnable
 
-from .future import Future
+from .future import QFuture
 
 
 class Signal(QObject):
     finished = pyqtSignal(object)
 
 
-class BaseTask(QRunnable):
-    def __init__(self, _id: int, future: Future):
+class QBaseTask(QRunnable):
+    def __init__(self, _id: int, future: QFuture):
         super().__init__()
         self._signal: Signal = Signal()  # pyqtSignal(object)
-        self._future: Future = future
+        self._future: QFuture = future
         self._id: int = _id
         self._exception: Optional[BaseException] = None
         self._semaphore = future.semaphore
@@ -38,8 +38,8 @@ def func(*args) -> int:
     return sum(args)
 
 
-class Task(BaseTask):
-    def __init__(self, _id: int, future: Future, target: functools.partial, args, kwargs):
+class QTask(QBaseTask):
+    def __init__(self, _id: int, future: QFuture, target: functools.partial, args, kwargs):
         super().__init__(_id=_id, future=future)
         self._target = target
         self._kwargs = kwargs

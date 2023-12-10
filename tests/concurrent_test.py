@@ -1,6 +1,9 @@
 import os
 import sys
-import requests
+import time
+from urllib.request import Request,urlopen
+
+from pyqt5_concurrent.future import QFuture
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from PyQt5.QtWidgets import QApplication
@@ -15,19 +18,21 @@ def savePage(html, path):
 
 
 def getPage(url):
+    time.sleep(1)
     ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.0.0"
-    response = requests.request(
+    req = Request(
         method='GET',
         url=url,
         headers={'User-Agent': ua}
     )
-    return response.text
+    return urlopen(req).read().decode("utf-8")
 
 
 print("测试异步爬虫\n" + "=" * 50)
-executor = TaskExecutor(useGlobalThreadPool=False)
-run = executor._asyncRun(getPage, "https://www.baidu.com")
-run.result.connect(lambda r: savePage(r, "baidu.html"))
-run.finished.connect(lambda x: app.quit())
+fut1 = TaskExecutor.runTask(getPage, "https://www.baidu.com").then(lambda r: savePage(r,"baidu.html"))
+fut2 = TaskExecutor.runTask(getPage, "https://www.bing.com").then(lambda r: savePage(r,"bing.html"))
+
+QFuture.gather([fut1,fut2]).finished.connect(app.quit)
+
 print("任务开始")
 sys.exit(app.exec_())

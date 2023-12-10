@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import QApplication
 from src.pyqt5_concurrent.taskManager import TaskExecutor
 
 app = QApplication(sys.argv)
-taskExecutor = TaskExecutor.getGlobalInstance()
 
 TIME_TO_SLEEP = 3
 TIME_TO_CANCEL = 1
@@ -24,15 +23,15 @@ def func(t):
         t -= 0.5
 
 
-def cancelFunc(taskManager_, fut_, beginTime_):
-    taskManager_.cancelTask(fut_)
+def cancelFunc(fut_, beginTime_):
+    TaskExecutor.getGlobalInstance().cancelTask(fut_)
     print(f"task canceled, {time.time() - beginTime_}s elapsed")
 
 
-fut = taskExecutor._asyncRun(func, TIME_TO_SLEEP)
+fut = TaskExecutor.runTask(func, TIME_TO_SLEEP)
 beginTime = time.time()
 print("task started")
-QTimer.singleShot(TIME_TO_CANCEL * 1000, lambda: cancelFunc(taskExecutor, fut, beginTime))  # cancel task after 5s
+QTimer.singleShot(TIME_TO_CANCEL * 1000, lambda: cancelFunc(fut, beginTime))  # cancel task after 5s
 QTimer.singleShot((TIME_TO_SLEEP + 1) * 1000, app.quit)  # close app
 print("显然,这个测试是失败的,还没研究为什么,TaskExecutor中调用了QThreadPool::cancel()函数,但是任务还是继续执行了")
 app.exec_()

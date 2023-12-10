@@ -24,7 +24,7 @@ class FutureFailed(FutureError):
 
 
 class GatheredFutureFailed(FutureError):
-    def __init__(self, failures: List[Tuple['Future', BaseException]]):
+    def __init__(self, failures: List[Tuple['QFuture', BaseException]]):
         super().__init__()
         self.failures = failures
 
@@ -52,7 +52,7 @@ class FutureCancelled(FutureError):
         return "FutureCanceled()"
 
 
-class Future(QObject):
+class QFuture(QObject):
     result = pyqtSignal(object)  # self
     finished = pyqtSignal(object)  # self
     failed = pyqtSignal(object)  # self
@@ -75,7 +75,7 @@ class Future(QObject):
         self._extra = {}
         self._semaphore = QSemaphore(semaphore)
 
-    def __onChildFinished(self, childFuture: 'Future') -> None:
+    def __onChildFinished(self, childFuture: 'QFuture') -> None:
         self._mutex.lock()
         if childFuture.isFailed():
             self._failed = True
@@ -100,7 +100,7 @@ class Future(QObject):
             else:
                 self.setResult(self._result)
 
-    def __setChildren(self, children: List['Future']) -> None:
+    def __setChildren(self, children: List['QFuture']) -> None:
         self._children = children
         self._result = [None] * len(children)
         for i, fut in enumerate(self._children):
@@ -155,10 +155,10 @@ class Future(QObject):
     def setCallback(self, callback: Callable[[object, ], None]) -> None:
         self._callback = callback
 
-    def setFailedCallback(self, callback: Callable[['Future', ], None]) -> None:
+    def setFailedCallback(self, callback: Callable[['QFuture', ], None]) -> None:
         self._failedCallback = lambda e: callback(self)
 
-    def then(self, onSuccess: Callable, onFailed: Callable = None, onFinished: Callable = None) -> 'Future':
+    def then(self, onSuccess: Callable, onFailed: Callable = None, onFinished: Callable = None) -> 'QFuture':
         self.result.connect(onSuccess)
         if onFailed:
             self.failed.connect(onFailed)
@@ -184,32 +184,32 @@ class Future(QObject):
     def getTaskID(self) -> int:
         return self._taskID
 
-    def getChildren(self) -> List['Future']:
+    def getChildren(self) -> List['QFuture']:
         return self._children
 
     @staticmethod
-    def gather(futures: {Iterable, Sized}) -> 'Future':
+    def gather(futures: {Iterable, Sized}) -> 'QFuture':
         """
         :param futures: An iterable of Future objects
         :return: A Future object that will be done when all futures are done
         """
 
-        future = Future()
+        future = QFuture()
         future.__setChildren(futures)
         return future
 
     @property
-    def semaphore(self):
+    def semaphore(self) -> QSemaphore:
         return self._semaphore
 
-    def wait(self):
+    def wait(self) -> None:
         if self.hasChildren():
             for child in self.getChildren():
                 child.wait()
         else:
             self.semaphore.acquire(1)
 
-    def synchronize(self):
+    def synchronize(self) -> None:
         self.wait()
 
     def isDone(self) -> bool:
@@ -221,13 +221,13 @@ class Future(QObject):
     def getResult(self) -> Union[object, List[object]]:
         return self._result
 
-    def setExtra(self, key, value):
+    def setExtra(self, key, value) -> None:
         self._extra[key] = value
 
-    def getExtra(self, key):
+    def getExtra(self, key) -> object:
         return self._extra.get(key, None)
 
-    def hasExtra(self, key):
+    def hasExtra(self, key) -> bool:
         return key in self._extra
 
     def __getattr__(self, item):

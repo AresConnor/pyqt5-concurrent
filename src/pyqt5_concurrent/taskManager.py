@@ -1,3 +1,4 @@
+import os 
 import functools
 import warnings
 from typing import Dict, List, Callable, Iterable
@@ -5,13 +6,13 @@ from typing import Dict, List, Callable, Iterable
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThreadPool, QObject
 
-from .future import Future, FutureCancelled
-from .task import BaseTask, Task
+from .future import QFuture, FutureCancelled
+from .task import QBaseTask, QTask
 
 
 # substitute for psutil.cpu_count()
 def cpu_count():
-    return 8
+    return os.cpu_count() # logical cores
 
 
 class BaseTaskExecutor(QObject):
@@ -22,9 +23,9 @@ class BaseTaskExecutor(QObject):
             self.threadPool = QThreadPool.globalInstance()
         else:
             self.threadPool = QThreadPool()
-            self.threadPool.setMaxThreadCount(2 * cpu_count())  # IO-Bound = 2*N, CPU-Bound = N + 1
+            self.threadPool.setMaxThreadCount(cpu_count())
         self.taskMap = {}
-        self.tasks: Dict[int, BaseTask] = {}
+        self.tasks: Dict[int, QBaseTask] = {}
         self.taskCounter = 0
 
     def deleteLater(self) -> None:
@@ -34,7 +35,7 @@ class BaseTaskExecutor(QObject):
             self.threadPool.deleteLater()
         super().deleteLater()
 
-    def _taskRun(self, task: BaseTask, future: Future, **kwargs):
+    def _taskRun(self, task: QBaseTask, future: QFuture, **kwargs):
         self.tasks[self.taskCounter] = task
         future.setTaskID(self.taskCounter)
         # task.signal.finished:pyqtBoundSignal
@@ -42,18 +43,19 @@ class BaseTaskExecutor(QObject):
         self.threadPool.start(task)
         self.taskCounter += 1
 
-    def _taskDone(self, fut: Future):
+    def _taskDone(self, fut: QFuture):
         """
         need manually set Future.setFailed() or Future.setResult() to be called!!!
         """
         self.tasks.pop(fut.getTaskID())
-        if isinstance(e := fut.getExtra("exception"), Exception):
+        e = fut.getExtra("exception")
+        if isinstance(e, Exception):
             fut.setFailed(e)
         else:
             fut.setResult(fut.getExtra("result"))
 
-    def _taskCancel(self, fut: Future):
-        stack: List[Future] = [fut]
+    def _taskCancel(self, fut: QFuture) -> None:
+        stack: List[QFuture] = [fut]
         while stack:
             f = stack.pop()
             if not f.hasChildren() and not f.isDone():
@@ -61,9 +63,9 @@ class BaseTaskExecutor(QObject):
                 f.setFailed(FutureCancelled())
             stack.extend(f.getChildren())
 
-    def _taskSingleCancel(self, fut: Future):
+    def _taskSingleCancel(self, fut: QFuture) -> None:
         _id = fut.getTaskID()
-        taskRef: BaseTask = self.tasks[_id]
+        taskRef: QBaseTask = self.tasks[_id]
         if taskRef is not None:
             try:
                 taskRef.setAutoDelete(False)
@@ -73,17 +75,20 @@ class BaseTaskExecutor(QObject):
                 print("wrapped C/C++ object of type BaseTask has been deleted")
         del taskRef
 
-    def cancelTask(self, fut: Future):
-        warnings.warn("BaseTaskExecutor.cancelTask: 目前好像不能正常工作...", DeprecationWarning)
+    def cancelTask(self, fut: QFuture) -> None:
+        """
+        currently, this method can not work properly...
+        """
+        warnings.warn("BaseTaskExecutor.cancelTask: currently, this method can not work properly...", DeprecationWarning)
         self._taskCancel(fut)
 
 
 class TaskExecutor(BaseTaskExecutor):
     globalInstance = None
 
-    def _asyncRun(self, target: Callable, *args, **kwargs) -> Future:
-        future = Future()
-        task = Task(
+    def _asyncRun(self, target: Callable, *args, **kwargs) -> QFuture:
+        future = QFuture()
+        task = QTask(
             _id=self.taskCounter,
             future=future,
             target=target if target is functools.partial else functools.partial(target),
@@ -93,20 +98,20 @@ class TaskExecutor(BaseTaskExecutor):
         self._taskRun(task, future)
         return future
 
-    def _asyncMap(self, target: Callable, iterable: List[Iterable]):
+    def _asyncMap(self, target: Callable, iterable: List[Iterable]) -> QFuture:
         futures = []
         for args in iterable:
             futures.append(self._asyncRun(target, *args))
-        return Future.gather(futures)
+        return QFuture.gather(futures)
 
     @staticmethod
-    def getGlobalInstance():
+    def getGlobalInstance() -> 'TaskExecutor':
         if TaskExecutor.globalInstance is None:
             TaskExecutor.globalInstance = TaskExecutor()
         return TaskExecutor.globalInstance
 
     @classmethod
-    def runTask(cls, target: Callable, *args, **kwargs) -> Future:
+    def runTask(cls, target: Callable, *args, **kwargs) -> QFuture:
         """
         使用统一的TaskExecutor实例,防止task id冲突
         :param target:
@@ -115,3 +120,7 @@ class TaskExecutor(BaseTaskExecutor):
         :return:
         """
         return cls.getGlobalInstance()._asyncRun(target, *args, **kwargs)
+    
+    @classmethod
+    def createTask(cls, target: Callable, *args, **kwargs):
+        ...
