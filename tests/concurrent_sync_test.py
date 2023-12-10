@@ -6,8 +6,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
 
-from src.concurrent_.taskManager import TaskExecutor
-from src.concurrent_.future import Future
+from src.pyqt5_concurrent.taskManager import TaskExecutor
+from src.pyqt5_concurrent.future import Future
 
 WORK_TIME = 10
 
