@@ -29,10 +29,10 @@ def getPage(url):
 
 
 print("测试异步爬虫\n" + "=" * 50)
-fut1 = TaskExecutor.runTask(getPage, "https://www.baidu.com").then(lambda r: savePage(r,"baidu.html"))
-fut2 = TaskExecutor.runTask(getPage, "https://www.bing.com").then(lambda r: savePage(r,"bing.html"))
+task1 = TaskExecutor.createTask(getPage, "https://www.baidu.com").then(lambda r: savePage(r,"baidu1.html"))
+task2= TaskExecutor.createTask(getPage, "https://www.baidu.com").then(lambda r: savePage(r,"baidu2.html"))
 
-QFuture.gather([fut1,fut2]).finished.connect(app.quit)
+TaskExecutor.runAll([task1,task2]).finished.connect(app.quit)
 
 print("任务开始")
 sys.exit(app.exec_())

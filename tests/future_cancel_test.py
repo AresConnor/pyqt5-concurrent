@@ -24,7 +24,7 @@ def func(t):
 
 
 def cancelFunc(fut_, beginTime_):
-    TaskExecutor.getGlobalInstance().cancelTask(fut_)
+    TaskExecutor._globalInstance().cancelTask(fut_)
     print(f"task canceled, {time.time() - beginTime_}s elapsed")
 
 

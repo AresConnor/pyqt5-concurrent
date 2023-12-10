@@ -61,7 +61,7 @@ class QFuture(QObject):
 
     def __init__(self, semaphore=0):
         super().__init__()
-        self._taskID = None
+        self._taskID = -1
         self._failedCallback = lambda e: None
         self._done = False
         self._failed = False
@@ -182,6 +182,9 @@ class QFuture(QObject):
         self._taskID = _id
 
     def getTaskID(self) -> int:
+        """
+        -1 means that the bound task is pending rather running 
+        """
         return self._taskID
 
     def getChildren(self) -> List['QFuture']:

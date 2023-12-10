@@ -1,5 +1,5 @@
 import functools
-from typing import Optional
+from typing import Callable, Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal, QRunnable
 
@@ -26,6 +26,18 @@ class QBaseTask(QRunnable):
     @property
     def signal(self):
         return self._signal
+    
+    @property
+    def taskID(self):
+        return self._id
+
+    @property
+    def future(self):
+        return self._future
+    
+    def then(self, onSuccess: Callable, onFailed: Callable = None, onFinished: Callable = None) -> 'QBaseTask':
+        self._future.then(onSuccess, onFailed, onFinished)
+        return self
 
     def _taskDone(self, **data):
         for d in data.items():

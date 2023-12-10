@@ -1,4 +1,4 @@
-import os 
+import os
 import functools
 import warnings
 from typing import Dict, List, Callable, Iterable
@@ -12,7 +12,7 @@ from .task import QBaseTask, QTask
 
 # substitute for psutil.cpu_count()
 def cpu_count():
-    return os.cpu_count() # logical cores
+    return os.cpu_count()  # logical cores
 
 
 class BaseTaskExecutor(QObject):
@@ -35,13 +35,25 @@ class BaseTaskExecutor(QObject):
             self.threadPool.deleteLater()
         super().deleteLater()
 
-    def _taskRun(self, task: QBaseTask, future: QFuture, **kwargs):
-        self.tasks[self.taskCounter] = task
-        future.setTaskID(self.taskCounter)
-        # task.signal.finished:pyqtBoundSignal
+    def _runTask(self, task: QBaseTask) -> QFuture:
+        future = task._future
+        future.setTaskID(task.taskID)
         task.signal.finished.connect(self._taskDone, type=QtCore.Qt.ConnectionType.QueuedConnection)
         self.threadPool.start(task)
+        return future
+
+    def _createTask(self, target, args, kwargs) -> QTask:
+        future = QFuture()
+        task = QTask(
+            _id=self.taskCounter,
+            future=future,
+            target=target if target is functools.partial else functools.partial(target),
+            args=args,
+            kwargs=kwargs
+        )
+        self.tasks[self.taskCounter] = task
         self.taskCounter += 1
+        return task
 
     def _taskDone(self, fut: QFuture):
         """
@@ -79,24 +91,17 @@ class BaseTaskExecutor(QObject):
         """
         currently, this method can not work properly...
         """
-        warnings.warn("BaseTaskExecutor.cancelTask: currently, this method can not work properly...", DeprecationWarning)
+        warnings.warn("BaseTaskExecutor.cancelTask: currently, this method can not work properly...",
+                      DeprecationWarning)
         self._taskCancel(fut)
 
 
 class TaskExecutor(BaseTaskExecutor):
-    globalInstance = None
+    _globalInstance = None
 
     def _asyncRun(self, target: Callable, *args, **kwargs) -> QFuture:
-        future = QFuture()
-        task = QTask(
-            _id=self.taskCounter,
-            future=future,
-            target=target if target is functools.partial else functools.partial(target),
-            args=args,
-            kwargs=kwargs
-        )
-        self._taskRun(task, future)
-        return future
+        task = self._createTask(target, args, kwargs)
+        return self._runTask(task)
 
     def _asyncMap(self, target: Callable, iterable: List[Iterable]) -> QFuture:
         futures = []
@@ -105,10 +110,10 @@ class TaskExecutor(BaseTaskExecutor):
         return QFuture.gather(futures)
 
     @staticmethod
-    def getGlobalInstance() -> 'TaskExecutor':
-        if TaskExecutor.globalInstance is None:
-            TaskExecutor.globalInstance = TaskExecutor()
-        return TaskExecutor.globalInstance
+    def globalInstance() -> 'TaskExecutor':
+        if TaskExecutor._globalInstance is None:
+            TaskExecutor._globalInstance = TaskExecutor()
+        return TaskExecutor._globalInstance
 
     @classmethod
     def runTask(cls, target: Callable, *args, **kwargs) -> QFuture:
@@ -119,8 +124,19 @@ class TaskExecutor(BaseTaskExecutor):
         :param kwargs:
         :return:
         """
-        return cls.getGlobalInstance()._asyncRun(target, *args, **kwargs)
-    
+        return cls.globalInstance()._asyncRun(target, *args, **kwargs)
+
     @classmethod
-    def createTask(cls, target: Callable, *args, **kwargs):
-        ...
+    def createTask(cls, target: Callable, *args, **kwargs) -> QTask:
+        return cls.globalInstance()._createTask(target, args, kwargs)
+
+    @classmethod
+    def run(cls, task: QTask) -> QFuture:
+        return cls.globalInstance()._runTask(task)
+
+    @classmethod
+    def runAll(cls, tasks: List[QTask]) -> QFuture:
+        futs = []
+        for task in tasks:
+            futs.append(cls.run(task))
+        return QFuture.gather(futs)
