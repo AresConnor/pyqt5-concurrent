@@ -26,7 +26,7 @@ def getPage(url):
 
 print("测试异步爬虫\n" + "=" * 50)
 executor = TaskExecutor(useGlobalThreadPool=False)
-run = executor.asyncRun(getPage, "https://www.baidu.com")
+run = executor._asyncRun(getPage, "https://www.baidu.com")
 run.result.connect(lambda r: savePage(r, "baidu.html"))
 run.finished.connect(lambda x: app.quit())
 print("任务开始")

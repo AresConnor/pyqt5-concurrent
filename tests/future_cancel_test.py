@@ -29,7 +29,7 @@ def cancelFunc(taskManager_, fut_, beginTime_):
     print(f"task canceled, {time.time() - beginTime_}s elapsed")
 
 
-fut = taskExecutor.asyncRun(func, TIME_TO_SLEEP)
+fut = taskExecutor._asyncRun(func, TIME_TO_SLEEP)
 beginTime = time.time()
 print("task started")
 QTimer.singleShot(TIME_TO_CANCEL * 1000, lambda: cancelFunc(taskExecutor, fut, beginTime))  # cancel task after 5s

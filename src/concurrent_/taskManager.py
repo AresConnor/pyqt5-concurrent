@@ -81,7 +81,7 @@ class BaseTaskExecutor(QObject):
 class TaskExecutor(BaseTaskExecutor):
     globalInstance = None
 
-    def asyncRun(self, target: Callable, *args, **kwargs) -> Future:
+    def _asyncRun(self, target: Callable, *args, **kwargs) -> Future:
         future = Future()
         task = Task(
             _id=self.taskCounter,
@@ -93,10 +93,10 @@ class TaskExecutor(BaseTaskExecutor):
         self._taskRun(task, future)
         return future
 
-    def asyncMap(self, target: Callable, iterable: List[Iterable]):
+    def _asyncMap(self, target: Callable, iterable: List[Iterable]):
         futures = []
         for args in iterable:
-            futures.append(self.asyncRun(target, *args))
+            futures.append(self._asyncRun(target, *args))
         return Future.gather(futures)
 
     @staticmethod
@@ -114,4 +114,4 @@ class TaskExecutor(BaseTaskExecutor):
         :param kwargs:
         :return:
         """
-        return cls.getGlobalInstance().asyncRun(target, *args, **kwargs)
+        return cls.getGlobalInstance()._asyncRun(target, *args, **kwargs)
