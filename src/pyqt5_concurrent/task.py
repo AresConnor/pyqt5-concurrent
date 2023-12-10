@@ -3,7 +3,7 @@ from typing import Callable, Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal, QRunnable
 
-from .future import QFuture
+from . import QFuture
 
 
 class Signal(QObject):
@@ -34,10 +34,6 @@ class QBaseTask(QRunnable):
     @property
     def future(self):
         return self._future
-    
-    def then(self, onSuccess: Callable, onFailed: Callable = None, onFinished: Callable = None) -> 'QBaseTask':
-        self._future.then(onSuccess, onFailed, onFinished)
-        return self
 
     def _taskDone(self, **data):
         for d in data.items():
@@ -51,8 +47,9 @@ def func(*args) -> int:
 
 
 class QTask(QBaseTask):
-    def __init__(self, _id: int, future: QFuture, target: functools.partial, args, kwargs):
+    def __init__(self, _id: int, future: QFuture, target: functools.partial, executor ,args, kwargs):
         super().__init__(_id=_id, future=future)
+        self._executor = executor
         self._target = target
         self._kwargs = kwargs
         self._args = args
@@ -62,3 +59,10 @@ class QTask(QBaseTask):
             self._taskDone(result=self._target(*self._args, **self._kwargs))
         except Exception as exception:
             self._taskDone(exception=exception)
+
+    def then(self, onSuccess: Callable, onFailed: Callable = None, onFinished: Callable = None) -> 'QTask':
+        self._future.then(onSuccess, onFailed, onFinished)
+        return self
+
+    def runTask(self) -> QFuture:
+        return self._executor.runTask(self)

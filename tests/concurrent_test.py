@@ -1,13 +1,9 @@
-import os
 import sys
 import time
 from urllib.request import Request,urlopen
 
-from pyqt5_concurrent.future import QFuture
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from PyQt5.QtWidgets import QApplication
-from src.pyqt5_concurrent.taskManager import TaskExecutor
+from pyqt5_concurrent.taskExecutor import TaskExecutor
 app = QApplication(sys.argv)
 
 
@@ -27,12 +23,13 @@ def getPage(url):
     )
     return urlopen(req).read().decode("utf-8")
 
+# task0 = TaskExecutor.createTask(getPage, "https://www.bing.com").then(lambda r: savePage(r,"bing.html")).runTask().wait()
 
 print("测试异步爬虫\n" + "=" * 50)
 task1 = TaskExecutor.createTask(getPage, "https://www.baidu.com").then(lambda r: savePage(r,"baidu1.html"))
 task2= TaskExecutor.createTask(getPage, "https://www.baidu.com").then(lambda r: savePage(r,"baidu2.html"))
 
-TaskExecutor.runAll([task1,task2]).finished.connect(app.quit)
+TaskExecutor.runTasks([task1,task2]).finished.connect(app.quit)
 
 print("任务开始")
 sys.exit(app.exec_())

@@ -1,12 +1,8 @@
-import os
 import sys
 import time
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 from PyQt5.QtCore import QThread, QTimer
 from PyQt5.QtWidgets import QApplication
-
-from src.pyqt5_concurrent.taskManager import TaskExecutor
+from pyqt5_concurrent.taskExecutor import TaskExecutor
 
 app = QApplication(sys.argv)
 
@@ -24,11 +20,11 @@ def func(t):
 
 
 def cancelFunc(fut_, beginTime_):
-    TaskExecutor._globalInstance().cancelTask(fut_)
+    TaskExecutor.globalInstance().cancelTask(fut_)
     print(f"task canceled, {time.time() - beginTime_}s elapsed")
 
 
-fut = TaskExecutor.runTask(func, TIME_TO_SLEEP)
+fut = TaskExecutor.run(func, TIME_TO_SLEEP)
 beginTime = time.time()
 print("task started")
 QTimer.singleShot(TIME_TO_CANCEL * 1000, lambda: cancelFunc(fut, beginTime))  # cancel task after 5s

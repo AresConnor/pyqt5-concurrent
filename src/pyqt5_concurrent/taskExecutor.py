@@ -48,6 +48,7 @@ class BaseTaskExecutor(QObject):
             _id=self.taskCounter,
             future=future,
             target=target if target is functools.partial else functools.partial(target),
+            executor=self,
             args=args,
             kwargs=kwargs
         )
@@ -116,7 +117,7 @@ class TaskExecutor(BaseTaskExecutor):
         return TaskExecutor._globalInstance
 
     @classmethod
-    def runTask(cls, target: Callable, *args, **kwargs) -> QFuture:
+    def run(cls, target: Callable, *args, **kwargs) -> QFuture:
         """
         使用统一的TaskExecutor实例,防止task id冲突
         :param target:
@@ -131,12 +132,12 @@ class TaskExecutor(BaseTaskExecutor):
         return cls.globalInstance()._createTask(target, args, kwargs)
 
     @classmethod
-    def run(cls, task: QTask) -> QFuture:
+    def runTask(cls, task: QTask) -> QFuture:
         return cls.globalInstance()._runTask(task)
 
     @classmethod
-    def runAll(cls, tasks: List[QTask]) -> QFuture:
+    def runTasks(cls, tasks: List[QTask]) -> QFuture:
         futs = []
         for task in tasks:
-            futs.append(cls.run(task))
+            futs.append(cls.runTask(task))
         return QFuture.gather(futs)
