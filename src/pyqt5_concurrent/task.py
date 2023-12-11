@@ -3,7 +3,7 @@ from typing import Callable, Optional
 
 from PyQt5.QtCore import QObject, pyqtSignal, QRunnable
 
-from . import QFuture
+from .Future import QFuture
 
 
 class Signal(QObject):

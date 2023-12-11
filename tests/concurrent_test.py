@@ -3,18 +3,21 @@ import time
 from urllib.request import Request,urlopen
 
 from PyQt5.QtWidgets import QApplication
-from pyqt5_concurrent.taskExecutor import TaskExecutor
+from pyqt5_concurrent.TaskExecutor import TaskExecutor
 app = QApplication(sys.argv)
 
+def func(i,t):
+    while t > 0:
+        print(f"Task_{i} - hint")
+        time.sleep(1)
+        t -= 1
 
 def savePage(html, path):
     with open(path, 'w', encoding='utf-8') as f:
         f.write(html)
     print(f"saved page to path: {path}")
 
-
 def getPage(url):
-    time.sleep(1)
     ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.0.0"
     req = Request(
         method='GET',
@@ -23,7 +26,15 @@ def getPage(url):
     )
     return urlopen(req).read().decode("utf-8")
 
-# task0 = TaskExecutor.createTask(getPage, "https://www.bing.com").then(lambda r: savePage(r,"bing.html")).runTask().wait()
+print("测试简单的run\n" + "=" * 50)
+TaskExecutor.run(func,114514,t=2).wait()
+
+print("测试单个Task的链式启动\n" + "=" * 50)
+TaskExecutor.createTask(getPage, "https://github.com").then(lambda r: savePage(r,"github.html")).runTask().wait()
+
+print("测试map\n" + "=" * 50)
+args = [(0, 3),(1, 5)]
+fut = TaskExecutor.map(func,args).wait()
 
 print("测试异步爬虫\n" + "=" * 50)
 task1 = TaskExecutor.createTask(getPage, "https://www.baidu.com").then(lambda r: savePage(r,"baidu1.html"))

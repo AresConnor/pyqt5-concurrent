@@ -4,8 +4,8 @@ import time
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication
 
-from pyqt5_concurrent.taskExecutor import TaskExecutor
-from pyqt5_concurrent.future import QFuture
+from pyqt5_concurrent.TaskExecutor import TaskExecutor
+from pyqt5_concurrent.Future import QFuture
 
 WORK_TIME = 10
 

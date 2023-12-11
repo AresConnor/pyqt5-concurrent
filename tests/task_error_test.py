@@ -1,9 +1,8 @@
-import os
 import sys
 import time
 from PyQt5.QtWidgets import QApplication
 
-from pyqt5_concurrent.taskExecutor import TaskExecutor
+from pyqt5_concurrent.TaskExecutor import TaskExecutor
 
 app = QApplication(sys.argv)
 

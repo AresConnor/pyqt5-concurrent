@@ -107,9 +107,25 @@ class QFuture(QObject):
             setattr(fut, "_idx", i)
             fut.childrenDone.connect(self.__onChildFinished)
             fut._parent = self
-        for i, fut in enumerate(self._children):  # check if child is done
+        for fut in self._children:  # check if child is done
             if fut.isDone():
                 self.__onChildFinished(fut)
+    
+    def unsafeAddChild(self, child:'QFuture') -> None:
+        """
+        use before your wait the parent future
+        """
+        i = len(self._children)
+        self._children.append(child)
+        self._result.append(None)
+
+        setattr(child, "_idx", i)
+        child.childrenDone.connect(self.__onChildFinished)
+        child._parent = self
+
+        if child.isDone():
+            self.__onChildFinished(child)
+    
 
     def setResult(self, result) -> None:
         """
@@ -210,7 +226,9 @@ class QFuture(QObject):
             for child in self.getChildren():
                 child.wait()
         else:
+            print("pre lock",self._taskID)
             self.semaphore.acquire(1)
+            print("post lock",self._taskID)
 
     def synchronize(self) -> None:
         self.wait()

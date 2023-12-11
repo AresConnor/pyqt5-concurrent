@@ -1,13 +1,13 @@
 import os
 import functools
 import warnings
-from typing import Dict, List, Callable, Iterable
+from typing import Dict, List, Callable, Iterable,Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThreadPool, QObject
 
-from .future import QFuture, FutureCancelled
-from .task import QBaseTask, QTask
+from .Future import QFuture, FutureCancelled
+from .Task import QBaseTask, QTask
 
 
 # substitute for psutil.cpu_count()
@@ -119,13 +119,29 @@ class TaskExecutor(BaseTaskExecutor):
     @classmethod
     def run(cls, target: Callable, *args, **kwargs) -> QFuture:
         """
-        使用统一的TaskExecutor实例,防止task id冲突
+        use the global TaskExecutor instance to avoid task ID conflicts
         :param target:
         :param args:
         :param kwargs:
         :return:
         """
         return cls.globalInstance()._asyncRun(target, *args, **kwargs)
+    
+    @classmethod
+    def map(cls, target:Callable, iter_:Iterable) -> QFuture:
+        """
+        a simple wrapper for createTask and runTasks.
+
+        iter_ must be like : [1, 2, 3] for [(1, 2), (3, 4)],
+        if you need **kwargs in iter_, use createTask instead.
+        """
+        taskList = []
+        for args in iter_:
+            if isinstance(args,Tuple):
+                taskList.append(cls.createTask(target,*args))
+            else:
+                taskList.append(cls.createTask(target,args))
+        return cls.runTasks(taskList)        
 
     @classmethod
     def createTask(cls, target: Callable, *args, **kwargs) -> QTask:
