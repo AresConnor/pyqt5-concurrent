@@ -77,7 +77,7 @@ def work1(url,filename):
         url=url,
         headers=headers
     )
-    with open(path, 'w', encoding='utf-8') as f:
+    with open(filename, 'w', encoding='utf-8') as f:
         f.write(urlopen(req).read().decode("utf-8"))
     
 def work2(url):
