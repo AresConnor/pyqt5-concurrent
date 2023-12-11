@@ -1,10 +1,10 @@
 import sys
 import time
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QCoreApplication
 
 from pyqt5_concurrent.TaskExecutor import TaskExecutor
 
-app = QApplication(sys.argv)
+app = QCoreApplication(sys.argv)
 
 TIME_TO_RAISE = 3
 

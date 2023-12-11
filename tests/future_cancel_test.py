@@ -1,10 +1,10 @@
 import sys
 import time
 from PyQt5.QtCore import QThread, QTimer
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QCoreApplication
 from pyqt5_concurrent.TaskExecutor import TaskExecutor
 
-app = QApplication(sys.argv)
+app = QCoreApplication(sys.argv)
 
 TIME_TO_SLEEP = 3
 TIME_TO_CANCEL = 1

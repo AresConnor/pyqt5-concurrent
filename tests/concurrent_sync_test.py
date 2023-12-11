@@ -2,7 +2,7 @@ import sys
 import time
 
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QCoreApplication
 
 from pyqt5_concurrent.TaskExecutor import TaskExecutor
 from pyqt5_concurrent.Future import QFuture
@@ -10,7 +10,7 @@ from pyqt5_concurrent.Future import QFuture
 WORK_TIME = 10
 
 # 创建必要的对象
-app = QApplication(sys.argv)
+app = QCoreApplication(sys.argv)
 futures = []
 
 # 记录开始时间

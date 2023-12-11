@@ -2,9 +2,9 @@ import sys
 import time
 from urllib.request import Request,urlopen
 
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QCoreApplication
 from pyqt5_concurrent.TaskExecutor import TaskExecutor
-app = QApplication(sys.argv)
+app = QCoreApplication(sys.argv)
 
 def func(i,t):
     while t > 0:
@@ -30,15 +30,15 @@ print("测试简单的run\n" + "=" * 50)
 TaskExecutor.run(func,114514,t=2).wait()
 
 print("测试单个Task的链式启动\n" + "=" * 50)
-TaskExecutor.createTask(getPage, "https://github.com").then(lambda r: savePage(r,"github.html")).runTask().wait()
+TaskExecutor.createTask(getPage, "https://github.com").then(onSuccess=lambda r: savePage(r,"github.html"),onFailed=lambda _:print("failed:",_)).runTask().wait()
 
 print("测试map\n" + "=" * 50)
 args = [(0, 3),(1, 5)]
 fut = TaskExecutor.map(func,args).wait()
 
 print("测试异步爬虫\n" + "=" * 50)
-task1 = TaskExecutor.createTask(getPage, "https://www.baidu.com").then(lambda r: savePage(r,"baidu1.html"))
-task2= TaskExecutor.createTask(getPage, "https://www.baidu.com").then(lambda r: savePage(r,"baidu2.html"))
+task1 = TaskExecutor.createTask(getPage, "https://www.baidu.com").then(onSuccess=lambda r: savePage(r,"baidu1.html"),onFailed=lambda _:print("failed:",_))
+task2= TaskExecutor.createTask(getPage, "https://www.baidu.com").then(onSuccess=lambda r: savePage(r,"baidu2.html"),onFailed=lambda _:print("failed:",_))
 
 TaskExecutor.runTasks([task1,task2]).finished.connect(app.quit)
 
