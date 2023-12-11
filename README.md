@@ -164,4 +164,8 @@ QFuture.gather以及QFuture.wait()
 
 1.PyQt5
 
-2.[zhiyiYo (之一) (github.com)](https://github.com/zhiyiYo) (提出了一些很好的点子例如链式调用then)
+2.[zhiyiYo (之一) (github.com)](https://github.com/zhiyiYo) (提出了一些很好的点子,例如链式调用then)
+
+3.[rainzee (rainzee wang) (github.com)](https://github.com/rainzee)(提出了一些很好的点子,例如使用装饰器注册future回调)
+
+(按照时间先后的顺序)
