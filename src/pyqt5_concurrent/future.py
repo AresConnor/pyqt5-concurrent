@@ -1,6 +1,6 @@
 from typing import List, Optional, Callable, Iterable, Sized, Tuple, Union
 
-from PyQt5.QtCore import QObject, pyqtSignal, QMutex, QSemaphore
+from PyQt5.QtCore import QObject, pyqtSignal, QMutex, QSemaphore,QCoreApplication
 
 
 class FutureError(BaseException):
@@ -226,9 +226,8 @@ class QFuture(QObject):
             for child in self.getChildren():
                 child.wait()
         else:
-            print("pre lock",self._taskID)
             self.semaphore.acquire(1)
-            print("post lock",self._taskID)
+            QCoreApplication.processEvents() 
 
     def synchronize(self) -> None:
         self.wait()
