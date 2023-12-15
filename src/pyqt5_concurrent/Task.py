@@ -26,7 +26,7 @@ class QBaseTask(QRunnable):
     @property
     def signal(self):
         return self._signal
-    
+
     @property
     def taskID(self):
         return self._id
@@ -47,7 +47,15 @@ def func(*args) -> int:
 
 
 class QTask(QBaseTask):
-    def __init__(self, _id: int, future: QFuture, target: functools.partial, executor ,args, kwargs):
+    def __init__(
+        self,
+        _id: int,
+        future: QFuture,
+        target: functools.partial,
+        executor,
+        args,
+        kwargs,
+    ):
         super().__init__(_id=_id, future=future)
         self._executor = executor
         self._target = target
@@ -60,7 +68,12 @@ class QTask(QBaseTask):
         except Exception as exception:
             self._taskDone(exception=exception)
 
-    def then(self, onSuccess: Callable, onFailed: Callable = None, onFinished: Callable = None) -> 'QTask':
+    def then(
+        self,
+        onSuccess: Callable,
+        onFailed: Callable = None,
+        onFinished: Callable = None,
+    ) -> "QTask":
         self._future.then(onSuccess, onFailed, onFinished)
         return self
 

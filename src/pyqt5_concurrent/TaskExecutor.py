@@ -1,7 +1,7 @@
 import os
 import functools
 import warnings
-from typing import Dict, List, Callable, Iterable,Tuple
+from typing import Dict, List, Callable, Iterable, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThreadPool, QObject
@@ -38,7 +38,9 @@ class BaseTaskExecutor(QObject):
     def _runTask(self, task: QBaseTask) -> QFuture:
         future = task._future
         future.setTaskID(task.taskID)
-        task.signal.finished.connect(self._taskDone, type=QtCore.Qt.ConnectionType.QueuedConnection)
+        task.signal.finished.connect(
+            self._taskDone, type=QtCore.Qt.ConnectionType.QueuedConnection
+        )
         self.threadPool.start(task)
         return future
 
@@ -50,7 +52,7 @@ class BaseTaskExecutor(QObject):
             target=target if target is functools.partial else functools.partial(target),
             executor=self,
             args=args,
-            kwargs=kwargs
+            kwargs=kwargs,
         )
         self.tasks[self.taskCounter] = task
         self.taskCounter += 1
@@ -92,8 +94,10 @@ class BaseTaskExecutor(QObject):
         """
         currently, this method can not work properly...
         """
-        warnings.warn("BaseTaskExecutor.cancelTask: currently, this method can not work properly...",
-                      DeprecationWarning)
+        warnings.warn(
+            "BaseTaskExecutor.cancelTask: currently, this method can not work properly...",
+            DeprecationWarning,
+        )
         self._taskCancel(fut)
 
 
@@ -111,7 +115,7 @@ class TaskExecutor(BaseTaskExecutor):
         return QFuture.gather(futures)
 
     @staticmethod
-    def globalInstance() -> 'TaskExecutor':
+    def globalInstance() -> "TaskExecutor":
         if TaskExecutor._globalInstance is None:
             TaskExecutor._globalInstance = TaskExecutor()
         return TaskExecutor._globalInstance
@@ -126,9 +130,9 @@ class TaskExecutor(BaseTaskExecutor):
         :return:
         """
         return cls.globalInstance()._asyncRun(target, *args, **kwargs)
-    
+
     @classmethod
-    def map(cls, target:Callable, iter_:Iterable) -> QFuture:
+    def map(cls, target: Callable, iter_: Iterable) -> QFuture:
         """
         a simple wrapper for createTask and runTasks.
 
@@ -137,11 +141,11 @@ class TaskExecutor(BaseTaskExecutor):
         """
         taskList = []
         for args in iter_:
-            if isinstance(args,Tuple):
-                taskList.append(cls.createTask(target,*args))
+            if isinstance(args, Tuple):
+                taskList.append(cls.createTask(target, *args))
             else:
-                taskList.append(cls.createTask(target,args))
-        return cls.runTasks(taskList)        
+                taskList.append(cls.createTask(target, args))
+        return cls.runTasks(taskList)
 
     @classmethod
     def createTask(cls, target: Callable, *args, **kwargs) -> QTask:

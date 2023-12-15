@@ -27,7 +27,11 @@ def cancelFunc(fut_, beginTime_):
 fut = TaskExecutor.run(func, TIME_TO_SLEEP)
 beginTime = time.time()
 print("task started")
-QTimer.singleShot(TIME_TO_CANCEL * 1000, lambda: cancelFunc(fut, beginTime))  # cancel task after 5s
+QTimer.singleShot(
+    TIME_TO_CANCEL * 1000, lambda: cancelFunc(fut, beginTime)
+)  # cancel task after 5s
 QTimer.singleShot((TIME_TO_SLEEP + 1) * 1000, app.quit)  # close app
-print("显然,这个测试是失败的,还没研究为什么,TaskExecutor中调用了QThreadPool::cancel()函数,但是任务还是继续执行了")
+print(
+    "显然,这个测试是失败的,还没研究为什么,TaskExecutor中调用了QThreadPool::cancel()函数,但是任务还是继续执行了"
+)
 app.exec_()

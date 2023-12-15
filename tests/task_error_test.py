@@ -16,7 +16,11 @@ def func(t):
 
 
 fut = TaskExecutor.run(func, TIME_TO_RAISE)
-fut.result.connect(lambda x: print("result signal:", x))  # result 将不会被触发，因为任务抛出了异常
+fut.result.connect(
+    lambda x: print("result signal:", x)
+)  # result 将不会被触发，因为任务抛出了异常
 fut.failed.connect(lambda x: print("failed signal:", x))  # failed 信号将会被触发
-fut.finished.connect(lambda x: {print("done signal:", x), app.quit()})  # done 信号将会被触发(不管任务是否抛出异常,只要是任务结束了,done信号就会被触发)
+fut.finished.connect(
+    lambda x: {print("done signal:", x), app.quit()}
+)  # done 信号将会被触发(不管任务是否抛出异常,只要是任务结束了,done信号就会被触发)
 app.exec_()
