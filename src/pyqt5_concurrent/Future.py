@@ -1,3 +1,4 @@
+import enum
 from typing import List, Optional, Callable, Iterable, Sized, Tuple, Union
 
 from PyQt5.QtCore import QObject, pyqtSignal, QMutex, QSemaphore,QCoreApplication
@@ -6,6 +7,11 @@ from PyQt5.QtCore import QObject, pyqtSignal, QMutex, QSemaphore,QCoreApplicatio
 class FutureError(BaseException):
     pass
 
+class State(enum.Enum):
+    PENDING = 0
+    RUNNING = 1
+    FAILED = 2
+    SUCCESS = 3
 
 class FutureFailed(FutureError):
     def __init__(self, _exception: Optional[BaseException]):
@@ -73,6 +79,7 @@ class QFuture(QObject):
         self._callback = lambda _: None
         self._mutex = QMutex()
         self._extra = {}
+        self._state = State.PENDING  # set state by TaskExecutor
         self._semaphore = QSemaphore(semaphore)
 
     def __onChildFinished(self, childFuture: 'QFuture') -> None:
@@ -143,6 +150,8 @@ class QFuture(QObject):
                 self.childrenDone.emit(self)
             if self._callback:
                 self._callback(result)
+
+            self._state = State.SUCCESS
             self.result.emit(result)
             self.finished.emit(self)
         else:
@@ -162,6 +171,8 @@ class QFuture(QObject):
                 self.childrenDone.emit(self)
             if self._failedCallback:
                 self._failedCallback(self)
+
+            self._state = State.FAILED
             self.failed.emit(self._exception)
             self.finished.emit(self)
         else:
@@ -195,6 +206,10 @@ class QFuture(QObject):
         return self._exception
 
     def setTaskID(self, _id: int) -> None:
+        if self._taskID != -1:
+            raise RuntimeError("Task ID can only be set once")
+
+        self._state = State.RUNNING
         self._taskID = _id
 
     def getTaskID(self) -> int:
@@ -220,6 +235,14 @@ class QFuture(QObject):
     @property
     def semaphore(self) -> QSemaphore:
         return self._semaphore
+
+    @property
+    def state(self):
+        """
+        if future is not bound to a task (produced by QFuture.gather),its state will skip state.RUNNING (not really running in thread pool)
+        :return: QFuture state.
+        """
+        return self._state
 
     def wait(self) -> None:
         if self.hasChildren():

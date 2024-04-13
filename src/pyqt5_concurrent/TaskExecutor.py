@@ -6,7 +6,7 @@ from typing import Dict, List, Callable, Iterable, Tuple
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThreadPool, QObject
 
-from .Future import QFuture, FutureCancelled
+from .Future import QFuture, FutureCancelled, State
 from .Task import QBaseTask, QTask
 
 
@@ -38,18 +38,20 @@ class BaseTaskExecutor(QObject):
     def _runTask(self, task: QBaseTask) -> QFuture:
         future = task._future
         future.setTaskID(task.taskID)
+        future._state = State.RUNNING
         task.signal.finished.connect(
             self._taskDone, type=QtCore.Qt.ConnectionType.QueuedConnection
         )
-        self.threadPool.start(task)
+        self.threadPool.start(task, priority=task.priority)
         return future
 
-    def _createTask(self, target, args, kwargs) -> QTask:
+    def _createTask(self, target, priority, args, kwargs) -> QTask:
         future = QFuture()
         task = QTask(
             _id=self.taskCounter,
             future=future,
             target=target if target is functools.partial else functools.partial(target),
+            priority=priority,
             executor=self,
             args=args,
             kwargs=kwargs,
@@ -66,8 +68,10 @@ class BaseTaskExecutor(QObject):
         e = fut.getExtra("exception")
         if isinstance(e, Exception):
             fut.setFailed(e)
+            fut._state = State.FAILED
         else:
             fut.setResult(fut.getExtra("result"))
+            fut._state = State.SUCCESS
 
     def _taskCancel(self, fut: QFuture) -> None:
         stack: List[QFuture] = [fut]
@@ -104,14 +108,14 @@ class BaseTaskExecutor(QObject):
 class TaskExecutor(BaseTaskExecutor):
     _globalInstance = None
 
-    def _asyncRun(self, target: Callable, *args, **kwargs) -> QFuture:
-        task = self._createTask(target, args, kwargs)
+    def _asyncRun(self, target: Callable, priority:int ,*args, **kwargs) -> QFuture:
+        task = self._createTask(target,priority,args, kwargs)
         return self._runTask(task)
 
-    def _asyncMap(self, target: Callable, iterable: List[Iterable]) -> QFuture:
+    def _asyncMap(self, target: Callable, iterable: List[Iterable], priority:int=0 ) -> QFuture:
         futures = []
         for args in iterable:
-            futures.append(self._asyncRun(target, *args))
+            futures.append(self._asyncRun(target,priority ,*args))
         return QFuture.gather(futures)
 
     @staticmethod
@@ -121,18 +125,30 @@ class TaskExecutor(BaseTaskExecutor):
         return TaskExecutor._globalInstance
 
     @classmethod
-    def run(cls, target: Callable, *args, **kwargs) -> QFuture:
+    def run(cls, target: Callable,*args, **kwargs) -> QFuture:
         """
         use the global TaskExecutor instance to avoid task ID conflicts
         :param target:
-        :param args:
-        :param kwargs:
+        :param args: *arg for target
+        :param kwargs: **kwargs for target
         :return:
         """
-        return cls.globalInstance()._asyncRun(target, *args, **kwargs)
+        return cls.globalInstance()._asyncRun(target,0 ,*args, **kwargs)
 
     @classmethod
-    def map(cls, target: Callable, iter_: Iterable) -> QFuture:
+    def runWithPriority(cls, target: Callable, priority:int,*args, **kwargs) -> QFuture:
+        """
+        use the global TaskExecutor instance to avoid task ID conflicts
+        :param target:
+        :param priority: Task priority
+        :param args: *arg for target
+        :param kwargs: **kwargs for target
+        :return:
+        """
+        return cls.globalInstance()._asyncRun(target, priority, *args, **kwargs)
+
+    @classmethod
+    def map(cls, target: Callable, iter_: Iterable, priority:int = 0) -> QFuture:
         """
         a simple wrapper for createTask and runTasks.
 
@@ -141,15 +157,15 @@ class TaskExecutor(BaseTaskExecutor):
         """
         taskList = []
         for args in iter_:
-            if isinstance(args, Tuple):
-                taskList.append(cls.createTask(target, *args))
+            if isinstance(args, tuple):
+                taskList.append(cls.createTask(target,priority=priority, *args))
             else:
-                taskList.append(cls.createTask(target, args))
+                taskList.append(cls.createTask(target, args, priority=priority))
         return cls.runTasks(taskList)
 
     @classmethod
-    def createTask(cls, target: Callable, *args, **kwargs) -> QTask:
-        return cls.globalInstance()._createTask(target, args, kwargs)
+    def createTask(cls, target: Callable,*args, **kwargs) -> QTask:
+        return cls.globalInstance()._createTask(target,0 ,args, kwargs)
 
     @classmethod
     def runTask(cls, task: QTask) -> QFuture:

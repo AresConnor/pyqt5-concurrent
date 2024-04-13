@@ -11,13 +11,14 @@ class Signal(QObject):
 
 
 class QBaseTask(QRunnable):
-    def __init__(self, _id: int, future: QFuture):
+    def __init__(self, _id: int,future: QFuture,priority):
         super().__init__()
         self._signal: Signal = Signal()  # pyqtSignal(object)
         self._future: QFuture = future
         self._id: int = _id
         self._exception: Optional[BaseException] = None
         self._semaphore = future.semaphore
+        self._priority = priority
 
     @property
     def finished(self):
@@ -28,12 +29,30 @@ class QBaseTask(QRunnable):
         return self._signal
 
     @property
+    def priority(self):
+        return self._priority
+
+    @property
     def taskID(self):
         return self._id
 
     @property
     def future(self):
         return self._future
+
+    @property
+    def state(self):
+        return self._future.state
+
+    def withPriority(self, priority):
+        """
+        default:0, higher will be handled more quickly.
+        priority only makes sense when the task is waiting to be scheduled
+        :param priority:
+        :return:
+        """
+        self._priority = priority
+        return self
 
     def _taskDone(self, **data):
         for d in data.items():
@@ -42,27 +61,29 @@ class QBaseTask(QRunnable):
         self._semaphore.release(1)
 
 
-def func(*args) -> int:
-    return sum(args)
-
-
 class QTask(QBaseTask):
     def __init__(
         self,
         _id: int,
         future: QFuture,
         target: functools.partial,
+        priority,
         executor,
         args,
-        kwargs,
+        kwargs
     ):
-        super().__init__(_id=_id, future=future)
+        super().__init__(_id=_id,priority=priority ,future=future)
         self._executor = executor
+
         self._target = target
         self._kwargs = kwargs
         self._args = args
 
     def run(self) -> None:
+        """
+        use QTask.runTask() instead if you know what are you doing.
+        :return:
+        """
         try:
             self._taskDone(result=self._target(*self._args, **self._kwargs))
         except Exception as exception:
