@@ -160,6 +160,14 @@ QFuture.gather以及QFuture.wait()
 
 
 
+```python
+# 创建一个带有优先级的任务
+TaskExecutor.runWithPriority(print,1,"hello world")
+TaskExecutor.createTask(print,"hello world").withPriority(1).runTask()
+```
+
+为任务添加优先级的两种方法（只有在任务等待被调度时，优先级才有意义）
+
 ## 鸣谢：
 
 1.PyQt5
