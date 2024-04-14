@@ -1,7 +1,6 @@
 import sys
 import time
-from PyQt5.QtCore import QThread, QTimer
-from PyQt5.QtCore import QCoreApplication
+from qt import QThread,QCoreApplication,QTimer
 from pyqt5_concurrent.TaskExecutor import TaskExecutor
 
 app = QCoreApplication(sys.argv)
@@ -34,4 +33,4 @@ QTimer.singleShot((TIME_TO_SLEEP + 1) * 1000, app.quit)  # close app
 print(
     "显然,这个测试是失败的,还没研究为什么,TaskExecutor中调用了QThreadPool::cancel()函数,但是任务还是继续执行了"
 )
-app.exec_()
+app.exec()

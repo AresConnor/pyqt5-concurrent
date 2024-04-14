@@ -1,8 +1,7 @@
 import enum
 from typing import List, Optional, Callable, Iterable, Sized, Tuple, Union
 
-from PyQt5.QtCore import QObject, pyqtSignal, QMutex, QSemaphore,QCoreApplication
-
+from .qt import QObject,Signal,QMutex,QSemaphore,QCoreApplication
 
 class FutureError(BaseException):
     pass
@@ -59,11 +58,11 @@ class FutureCancelled(FutureError):
 
 
 class QFuture(QObject):
-    result = pyqtSignal(object)  # self
-    finished = pyqtSignal(object)  # self
-    failed = pyqtSignal(object)  # self
-    partialDone = pyqtSignal(object)  # child future
-    childrenDone = pyqtSignal(object)  # self
+    result = Signal(object)  # self
+    finished = Signal(object)  # self
+    failed = Signal(object)  # self
+    partialDone = Signal(object)  # child future
+    childrenDone = Signal(object)  # self
 
     def __init__(self, semaphore=0):
         super().__init__()

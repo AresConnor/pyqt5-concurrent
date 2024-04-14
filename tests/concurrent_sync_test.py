@@ -1,16 +1,12 @@
-import sys
 import time
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtCore import QCoreApplication
-
-from pyqt5_concurrent.TaskExecutor import TaskExecutor
-from pyqt5_concurrent.Future import QFuture
+from src.pyqt5_concurrent.Future import QFuture
+from src.pyqt5_concurrent.TaskExecutor import TaskExecutor
 
 WORK_TIME = 10
 
 # 创建必要的对象
-app = QCoreApplication(sys.argv)
+# app = QCoreApplication(sys.argv)
 futures = []
 
 # 记录开始时间
@@ -30,5 +26,4 @@ gathered.synchronize()  # equivalent to: fut.wait()
 
 print("all tasks done:", time.time() - t, ",expected:", WORK_TIME)
 
-QTimer.singleShot(1000, app.quit)  # close app after 1s
-app.exec_()
+# QTimer.singleShot(1000, app.quit)  # close app after 1s

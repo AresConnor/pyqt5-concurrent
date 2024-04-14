@@ -1,11 +1,9 @@
 import os
 import functools
 import warnings
-from typing import Dict, List, Callable, Iterable, Tuple
+from typing import Dict, List, Callable, Iterable
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QThreadPool, QObject
-
+from .qt import QThreadPool,QObject
 from .Future import QFuture, FutureCancelled, State
 from .Task import QBaseTask, QTask
 
@@ -39,9 +37,7 @@ class BaseTaskExecutor(QObject):
         future = task._future
         future.setTaskID(task.taskID)
         future._state = State.RUNNING
-        task.signal.finished.connect(
-            self._taskDone, type=QtCore.Qt.ConnectionType.QueuedConnection
-        )
+        task.signal.finished.connect(self._taskDone)
         self.threadPool.start(task, priority=task.priority)
         return future
 
@@ -88,7 +84,7 @@ class BaseTaskExecutor(QObject):
         if taskRef is not None:
             try:
                 taskRef.setAutoDelete(False)
-                self.threadPool.cancel(taskRef)
+                self.threadPool.tryTake(taskRef)
                 taskRef.setAutoDelete(True)
             except RuntimeError:
                 print("wrapped C/C++ object of type BaseTask has been deleted")

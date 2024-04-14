@@ -2,7 +2,7 @@ import sys
 import time
 from urllib.request import Request, urlopen
 
-from PyQt5.QtCore import QCoreApplication
+from qt import QCoreApplication
 from pyqt5_concurrent.TaskExecutor import TaskExecutor
 
 app = QCoreApplication(sys.argv)
@@ -53,4 +53,4 @@ task2 = TaskExecutor.createTask(getPage, "https://www.baidu.com").then(
 TaskExecutor.runTasks([task1, task2]).finished.connect(app.quit)
 
 print("任务开始")
-sys.exit(app.exec_())
+sys.exit(app.exec())
