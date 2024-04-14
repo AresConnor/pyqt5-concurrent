@@ -1,16 +1,19 @@
 import enum
 from typing import List, Optional, Callable, Iterable, Sized, Tuple, Union
 
-from .qt import QObject,Signal,QMutex,QSemaphore,QCoreApplication
+from .qt import QObject, Signal, QMutex, QSemaphore, QCoreApplication
+
 
 class FutureError(BaseException):
     pass
+
 
 class State(enum.Enum):
     PENDING = 0
     RUNNING = 1
     FAILED = 2
     SUCCESS = 3
+
 
 class FutureFailed(FutureError):
     def __init__(self, _exception: Optional[BaseException]):
@@ -29,7 +32,7 @@ class FutureFailed(FutureError):
 
 
 class GatheredFutureFailed(FutureError):
-    def __init__(self, failures: List[Tuple['QFuture', BaseException]]):
+    def __init__(self, failures: List[Tuple["QFuture", BaseException]]):
         super().__init__()
         self.failures = failures
 
@@ -81,7 +84,7 @@ class QFuture(QObject):
         self._state = State.PENDING  # set state by TaskExecutor
         self._semaphore = QSemaphore(semaphore)
 
-    def __onChildFinished(self, childFuture: 'QFuture') -> None:
+    def __onChildFinished(self, childFuture: "QFuture") -> None:
         self._mutex.lock()
         if childFuture.isFailed():
             self._failed = True
@@ -94,7 +97,8 @@ class QFuture(QObject):
         except AttributeError:
             self._mutex.unlock()
             raise RuntimeError(
-                "Invalid child future: please ensure that the child future is created by method 'Future.setChildren'")
+                "Invalid child future: please ensure that the child future is created by method 'Future.setChildren'"
+            )
         if self._counter == len(self._children):
             if self._failed:  # set failed
                 fails = []
@@ -106,7 +110,7 @@ class QFuture(QObject):
             else:
                 self.setResult(self._result)
 
-    def __setChildren(self, children: List['QFuture']) -> None:
+    def __setChildren(self, children: List["QFuture"]) -> None:
         self._children = children
         self._result = [None] * len(children)
         for i, fut in enumerate(self._children):
@@ -116,8 +120,8 @@ class QFuture(QObject):
         for fut in self._children:  # check if child is done
             if fut.isDone():
                 self.__onChildFinished(fut)
-    
-    def unsafeAddChild(self, child:'QFuture') -> None:
+
+    def unsafeAddChild(self, child: "QFuture") -> None:
         """
         use before your wait the parent future
         """
@@ -131,7 +135,6 @@ class QFuture(QObject):
 
         if child.isDone():
             self.__onChildFinished(child)
-    
 
     def setResult(self, result) -> None:
         """
@@ -142,7 +145,6 @@ class QFuture(QObject):
         please use in main thread,or use signal-slot to set result !!!
         """
         if not self._done:
-
             self._result = result
             self._done = True
             if self._parent:
@@ -178,13 +180,34 @@ class QFuture(QObject):
             raise RuntimeError("Future already done")
         # self.deleteLater()
 
-    def setCallback(self, callback: Callable[[object, ], None]) -> None:
+    def setCallback(
+        self,
+        callback: Callable[
+            [
+                object,
+            ],
+            None,
+        ],
+    ) -> None:
         self._callback = callback
 
-    def setFailedCallback(self, callback: Callable[['QFuture', ], None]) -> None:
+    def setFailedCallback(
+        self,
+        callback: Callable[
+            [
+                "QFuture",
+            ],
+            None,
+        ],
+    ) -> None:
         self._failedCallback = lambda e: callback(self)
 
-    def then(self, onSuccess: Callable, onFailed: Callable = None, onFinished: Callable = None) -> 'QFuture':
+    def then(
+        self,
+        onSuccess: Callable,
+        onFailed: Callable = None,
+        onFinished: Callable = None,
+    ) -> "QFuture":
         self.result.connect(onSuccess)
         if onFailed:
             self.failed.connect(onFailed)
@@ -213,15 +236,15 @@ class QFuture(QObject):
 
     def getTaskID(self) -> int:
         """
-        -1 means that the bound task is pending rather running 
+        -1 means that the bound task is pending rather running
         """
         return self._taskID
 
-    def getChildren(self) -> List['QFuture']:
+    def getChildren(self) -> List["QFuture"]:
         return self._children
 
     @staticmethod
-    def gather(futures: {Iterable, Sized}) -> 'QFuture':
+    def gather(futures: {Iterable, Sized}) -> "QFuture":
         """
         :param futures: An iterable of Future objects
         :return: A Future object that will be done when all futures are done
@@ -249,7 +272,7 @@ class QFuture(QObject):
                 child.wait()
         else:
             self.semaphore.acquire(1)
-            QCoreApplication.processEvents() 
+            QCoreApplication.processEvents()
 
     def synchronize(self) -> None:
         self.wait()

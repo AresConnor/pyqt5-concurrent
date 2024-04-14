@@ -2,7 +2,7 @@ import functools
 from typing import Callable, Optional
 
 from .Future import QFuture
-from .qt import QObject,Signal,QRunnable
+from .qt import QObject, Signal, QRunnable
 
 
 class _Signal(QObject):
@@ -10,7 +10,7 @@ class _Signal(QObject):
 
 
 class QBaseTask(QRunnable):
-    def __init__(self, _id: int,future: QFuture,priority):
+    def __init__(self, _id: int, future: QFuture, priority):
         super().__init__()
         self._signal: _Signal = _Signal()  # pyqtSignal(object)
         self._future: QFuture = future
@@ -69,9 +69,9 @@ class QTask(QBaseTask):
         priority,
         executor,
         args,
-        kwargs
+        kwargs,
     ):
-        super().__init__(_id=_id,priority=priority ,future=future)
+        super().__init__(_id=_id, priority=priority, future=future)
         self._executor = executor
 
         self._target = target

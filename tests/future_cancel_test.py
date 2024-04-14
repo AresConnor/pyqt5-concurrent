@@ -1,6 +1,6 @@
 import sys
 import time
-from qt import QThread,QCoreApplication,QTimer
+from qt import QThread, QCoreApplication, QTimer
 from pyqt5_concurrent.TaskExecutor import TaskExecutor
 
 app = QCoreApplication(sys.argv)

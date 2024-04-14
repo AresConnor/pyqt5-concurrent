@@ -3,7 +3,7 @@ import functools
 import warnings
 from typing import Dict, List, Callable, Iterable
 
-from .qt import QThreadPool,QObject
+from .qt import QThreadPool, QObject
 from .Future import QFuture, FutureCancelled, State
 from .Task import QBaseTask, QTask
 
@@ -104,14 +104,16 @@ class BaseTaskExecutor(QObject):
 class TaskExecutor(BaseTaskExecutor):
     _globalInstance = None
 
-    def _asyncRun(self, target: Callable, priority:int ,*args, **kwargs) -> QFuture:
-        task = self._createTask(target,priority,args, kwargs)
+    def _asyncRun(self, target: Callable, priority: int, *args, **kwargs) -> QFuture:
+        task = self._createTask(target, priority, args, kwargs)
         return self._runTask(task)
 
-    def _asyncMap(self, target: Callable, iterable: List[Iterable], priority:int=0 ) -> QFuture:
+    def _asyncMap(
+        self, target: Callable, iterable: List[Iterable], priority: int = 0
+    ) -> QFuture:
         futures = []
         for args in iterable:
-            futures.append(self._asyncRun(target,priority ,*args))
+            futures.append(self._asyncRun(target, priority, *args))
         return QFuture.gather(futures)
 
     @staticmethod
@@ -121,7 +123,7 @@ class TaskExecutor(BaseTaskExecutor):
         return TaskExecutor._globalInstance
 
     @classmethod
-    def run(cls, target: Callable,*args, **kwargs) -> QFuture:
+    def run(cls, target: Callable, *args, **kwargs) -> QFuture:
         """
         use the global TaskExecutor instance to avoid task ID conflicts
         :param target:
@@ -129,10 +131,12 @@ class TaskExecutor(BaseTaskExecutor):
         :param kwargs: **kwargs for target
         :return:
         """
-        return cls.globalInstance()._asyncRun(target,0 ,*args, **kwargs)
+        return cls.globalInstance()._asyncRun(target, 0, *args, **kwargs)
 
     @classmethod
-    def runWithPriority(cls, target: Callable, priority:int,*args, **kwargs) -> QFuture:
+    def runWithPriority(
+        cls, target: Callable, priority: int, *args, **kwargs
+    ) -> QFuture:
         """
         use the global TaskExecutor instance to avoid task ID conflicts
         :param target:
@@ -144,7 +148,7 @@ class TaskExecutor(BaseTaskExecutor):
         return cls.globalInstance()._asyncRun(target, priority, *args, **kwargs)
 
     @classmethod
-    def map(cls, target: Callable, iter_: Iterable, priority:int = 0) -> QFuture:
+    def map(cls, target: Callable, iter_: Iterable, priority: int = 0) -> QFuture:
         """
         a simple wrapper for createTask and runTasks.
 
@@ -154,14 +158,14 @@ class TaskExecutor(BaseTaskExecutor):
         taskList = []
         for args in iter_:
             if isinstance(args, tuple):
-                taskList.append(cls.createTask(target,priority=priority, *args))
+                taskList.append(cls.createTask(target, priority=priority, *args))
             else:
                 taskList.append(cls.createTask(target, args, priority=priority))
         return cls.runTasks(taskList)
 
     @classmethod
-    def createTask(cls, target: Callable,*args, **kwargs) -> QTask:
-        return cls.globalInstance()._createTask(target,0 ,args, kwargs)
+    def createTask(cls, target: Callable, *args, **kwargs) -> QTask:
+        return cls.globalInstance()._createTask(target, 0, args, kwargs)
 
     @classmethod
     def runTask(cls, task: QTask) -> QFuture:

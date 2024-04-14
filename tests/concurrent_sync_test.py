@@ -1,7 +1,7 @@
 import time
 
-from src.pyqt5_concurrent.Future import QFuture
-from src.pyqt5_concurrent.TaskExecutor import TaskExecutor
+from pyqt5_concurrent.Future import QFuture
+from pyqt5_concurrent.TaskExecutor import TaskExecutor
 
 WORK_TIME = 10
 
