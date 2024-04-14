@@ -1,5 +1,7 @@
 # PyQt5-Concurrent
 
+### 现已支持Pyside2 PySide6 PyQt5 PyQt6
+
 ## 简介:
 
 ​	pyqt5-concurrent是一个基于QThreadPool实现的并发库，主要是对QRunnable的封装，提供了一些易于使用的面向任务的API。简单实现了Future和Task，并支持链式操作，让代码逻辑更流畅。
