@@ -1,7 +1,7 @@
 import enum
 from typing import List, Optional, Callable, Iterable, Sized, Tuple, Union
 
-from .qt import QObject, Signal, QMutex, QSemaphore, QCoreApplication
+from .Qt import QObject, Signal, QMutex, QSemaphore, QCoreApplication
 
 
 class FutureError(BaseException):

@@ -2,7 +2,7 @@ import functools
 from typing import Callable, Optional
 
 from .Future import QFuture
-from .qt import QObject, Signal, QRunnable
+from .Qt import QObject, Signal, QRunnable
 
 
 class _Signal(QObject):

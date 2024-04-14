@@ -3,7 +3,7 @@ import functools
 import warnings
 from typing import Dict, List, Callable, Iterable
 
-from .qt import QThreadPool, QObject
+from .Qt import QThreadPool, QObject
 from .Future import QFuture, FutureCancelled, State
 from .Task import QBaseTask, QTask
 
