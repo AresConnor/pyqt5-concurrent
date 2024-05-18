@@ -7,8 +7,11 @@ qt_bindings = ["PySide6.QtCore", "PyQt6.QtCore", "PySide2.QtCore", "PyQt5.QtCore
 
 def find_qt_bindings():
     for binding in qt_bindings:
-        if importlib.util.find_spec(binding) is not None:
-            return binding
+        try:
+            if importlib.util.find_spec(binding) is not None:
+                return binding
+        except ModuleNotFoundError:
+            continue
     raise ModuleNotFoundError("No python Qt bindings found.")
 
 
