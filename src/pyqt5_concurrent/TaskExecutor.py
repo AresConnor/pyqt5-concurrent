@@ -1,16 +1,13 @@
-import os
 import functools
+import os
 import warnings
 from typing import Dict, List, Callable, Iterable
 
-from .Qt import QThreadPool, QObject
 from .Future import QFuture, FutureCancelled, State
+from .Qt import QThreadPool, QObject
 from .Task import QBaseTask, QTask
 
-
-# substitute for psutil.cpu_count()
-def cpu_count():
-    return os.cpu_count()  # logical cores
+CPU_COUNTS = os.cpu_count()
 
 
 class BaseTaskExecutor(QObject):
@@ -21,7 +18,6 @@ class BaseTaskExecutor(QObject):
             self.threadPool = QThreadPool.globalInstance()
         else:
             self.threadPool = QThreadPool()
-            self.threadPool.setMaxThreadCount(cpu_count())
         self.taskMap = {}
         self.tasks: Dict[int, QBaseTask] = {}
         self.taskCounter = 0
@@ -55,6 +51,18 @@ class BaseTaskExecutor(QObject):
         self.tasks[self.taskCounter] = task
         self.taskCounter += 1
         return task
+
+    def _asyncRun(self, target: Callable, priority: int, *args, **kwargs) -> QFuture:
+        task = self._createTask(target, priority, args, kwargs)
+        return self._runTask(task)
+
+    def _asyncMap(
+        self, target: Callable, iterable: List[Iterable], priority: int = 0
+    ) -> QFuture:
+        futures = []
+        for args in iterable:
+            futures.append(self._asyncRun(target, priority, *args))
+        return QFuture.gather(futures)
 
     def _taskDone(self, fut: QFuture):
         """
@@ -100,21 +108,17 @@ class BaseTaskExecutor(QObject):
         )
         self._taskCancel(fut)
 
+    @property
+    def workers(self) -> int:
+        return self.threadPool.maxThreadCount()
+
+    @workers.setter
+    def workers(self, workers: int) -> None:
+        self.threadPool.setMaxThreadCount(workers)
+
 
 class TaskExecutor(BaseTaskExecutor):
     _globalInstance = None
-
-    def _asyncRun(self, target: Callable, priority: int, *args, **kwargs) -> QFuture:
-        task = self._createTask(target, priority, args, kwargs)
-        return self._runTask(task)
-
-    def _asyncMap(
-        self, target: Callable, iterable: List[Iterable], priority: int = 0
-    ) -> QFuture:
-        futures = []
-        for args in iterable:
-            futures.append(self._asyncRun(target, priority, *args))
-        return QFuture.gather(futures)
 
     @staticmethod
     def globalInstance() -> "TaskExecutor":
@@ -177,3 +181,66 @@ class TaskExecutor(BaseTaskExecutor):
         for task in tasks:
             futs.append(cls.runTask(task))
         return QFuture.gather(futs)
+
+
+class UniqueTaskExecutor(BaseTaskExecutor):
+    def __init__(self, workers: int = CPU_COUNTS):
+        super().__init__(useGlobalThreadPool=False)
+        self.workers = workers
+
+    def run(self, target: Callable, *args, **kwargs) -> QFuture:
+        """
+        use the global TaskExecutor instance to avoid task ID conflicts
+        :param target:
+        :param args: *arg for target
+        :param kwargs: **kwargs for target
+        :return:
+        """
+        return self._asyncRun(target, 0, *args, **kwargs)
+
+    def runWithPriority(
+        self, target: Callable, priority: int, *args, **kwargs
+    ) -> QFuture:
+        """
+        use the global TaskExecutor instance to avoid task ID conflicts
+        :param target:
+        :param priority: Task priority
+        :param args: *arg for target
+        :param kwargs: **kwargs for target
+        :return:
+        """
+        return self._asyncRun(target, priority, *args, **kwargs)
+
+    def map(self, target: Callable, iter_: Iterable, priority: int = 0) -> QFuture:
+        """
+        a simple wrapper for createTask and runTasks.
+
+        iter_ must be like : [1, 2, 3] for [(1, 2), (3, 4)],
+        if you need **kwargs in iter_, use createTask instead.
+        """
+        taskList = []
+        for args in iter_:
+            if isinstance(args, tuple):
+                taskList.append(self.createTask(target, priority=priority, *args))
+            else:
+                taskList.append(self.createTask(target, args, priority=priority))
+        return self.runTasks(taskList)
+
+    def createTask(self, target: Callable, *args, **kwargs) -> QTask:
+        return self._createTask(target, 0, args, kwargs)
+
+    def runTask(self, task: QTask) -> QFuture:
+        return self._runTask(task)
+
+    def runTasks(self, tasks: List[QTask]) -> QFuture:
+        futs = []
+        for task in tasks:
+            futs.append(self.runTask(task))
+        return QFuture.gather(futs)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.threadPool.waitForDone()
+        self.deleteLater()

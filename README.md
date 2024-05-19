@@ -15,7 +15,7 @@
 ​	(起初是因为我在给MCSL2写模组广场插件的时候，一页需要异步获取50个图像，任务的重复性很强，不是很适合用QThread，但是子类化QRunnable又太累了（lazy =_=），于是突发奇想，构造了一个初步的Future和TaskExecutor来实现基于任务的并发，之后在群主的建议下分出了并发逻辑构建成库)
 
 ## 一些例子:
-
+- [示例1]
 ```python
 import sys
 import time
@@ -31,10 +31,11 @@ print("3s 后退出")
 app.exec_()
 ```
 
-上图例子中简单介绍了TaskExecutor最基本的用法：TaskExecutor.run(cls, target: Callable, *args, **kwargs) -> QFuture。args和kwargs将传入target中，并在线程池中运行。他返回一个future，你可以用他来实现任务成功，任务失败（发生异常），任务结束的回调。
+上图例子中简单介绍了TaskExecutor最基本的用法：TaskExecutor.run(self, target: Callable, *args, **kwargs) -> QFuture。args和kwargs将传入target中，并在线程池中运行。他返回一个future，你可以用他来实现任务成功，任务失败（发生异常），任务结束的回调。
 
 
 
+- [示例2]
 ```python
 import sys
 import time
@@ -62,6 +63,7 @@ Future.failed.connect(cb),Future.finished.connect(cb)。但是then返回的是Fu
 
 
 
+- [示例3]
 ```python
 import sys
 import time
@@ -117,9 +119,9 @@ print("2个任务开始")
 app.exec_()
 ```
 
-Task的用法
 
 
+- [Task的用法]
 
 ```python
 import sys
@@ -158,8 +160,9 @@ QTimer.singleShot(1000, app.quit)  # close app after 1s
 app.exec_()
 ```
 
-QFuture.gather以及QFuture.wait()
 
+
+- [QFuture.gather以及QFuture.wait()]
 
 
 ```python
@@ -169,6 +172,38 @@ TaskExecutor.createTask(print,"hello world").withPriority(1).runTask()
 ```
 
 为任务添加优先级的两种方法（只有在任务等待被调度时，优先级才有意义）
+
+
+
+- [UniqueTaskExecutor]
+
+0.1.6添加UniqueTaskExecutor
+
+它包装了一个非全局的线程池，如其名Unique，不同实例的线程池相互独立，意味着它是独立的执行单元，支持with语句。
+
+UniqueTaskExecutor的api与TaskExecutor一致，用法请参考后者。
+
+UniqueTaskExecutor支持设定并行的任务数量。
+
+UniqueTaskExecutor退出with语句前会自动执行self.threadpool.waitForDone()，并会销毁自己
+
+```python
+class UniqueTaskExecutor(BaseTaskExecutor):
+    def __init__(self, workers: int = CPU_COUNTS):
+        super().__init__(useGlobalThreadPool=False)
+        self.workers = workers
+
+	...
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.threadPool.waitForDone()
+        self.deleteLater()
+```
+
+
 
 ## 鸣谢：
 
