@@ -162,9 +162,9 @@ class TaskExecutor(BaseTaskExecutor):
         taskList = []
         for args in iter_:
             if isinstance(args, tuple):
-                taskList.append(cls.createTask(target, priority=priority, *args))
+                taskList.append(cls.createTask(target, *args).withPriority(priority))
             else:
-                taskList.append(cls.createTask(target, args, priority=priority))
+                taskList.append(cls.createTask(target, args).withPriority(priority))
         return cls.runTasks(taskList)
 
     @classmethod
