@@ -97,5 +97,17 @@ class QTask(QBaseTask):
         self._future.then(onSuccess, onFailed, onFinished)
         return self
 
+    def onSuccess(self, callback: Callable) -> Callable:
+        self._future.result.connect(callback)
+        return callback
+
+    def onFailed(self, callback: Callable) -> Callable:
+        self._future.failed.connect(callback)
+        return callback
+
+    def onFinished(self, callback: Callable) -> Callable:
+        self._future.finished.connect(callback)
+        return callback
+
     def runTask(self) -> QFuture:
         return self._executor.runTask(self)
